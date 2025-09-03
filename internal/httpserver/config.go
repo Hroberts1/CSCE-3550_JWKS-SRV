@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -39,6 +40,30 @@ func NewConfig() (*Config, error) {
 	}
 
 	// OverRide w/ env vars IF set AND valid
+	overrides := map[string]struct {
+		envKey string
+		target *time.Duration
+	}{
+		"keyLifetime": {"KEY_LIFETIME", &keyLifetime},
+		"keyRetain":   {"KEY_RETAIN", &keyRetain},
+		"jwtLifetime": {"JWT_LIFETIME", &jwtLifetime},
+	}
+
+	// Duration overrides
+	for name, override := range overrides {
+		if envVal := os.Getenv(override.envKey); envVal != "" {
+			if parsed, parseErr := time.ParseDuration(envVal); parseErr == nil {
+				*override.target = parsed
+			} else {
+				return nil, fmt.Errorf("invalid %s (%s): %w", override.envKey, name, parseErr)
+			}
+		}
+	}
+
+	// string override
+	if envIssuer := os.Getenv("ISSUER"); envIssuer != "" {
+		issuer = envIssuer
+	}
 
 	return &Config{
 		KeyLifetime:     keyLifetime,
