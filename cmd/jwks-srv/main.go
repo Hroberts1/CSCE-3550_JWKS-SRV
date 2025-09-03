@@ -44,6 +44,7 @@ func main(){
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err :=server.Shutdown(ctx); err != nil {
-		logger.
+		logger.Printf("Issue during death: %v", err)
 	}
+	logger.Println("SRV halted safely")
 }
