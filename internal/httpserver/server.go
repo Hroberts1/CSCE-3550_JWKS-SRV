@@ -40,7 +40,7 @@ func (s *Server) Waiter(addr string) error {
 }
 
 // graceful death
-func (s *Server) death(ctx context.Context) error {
+func (s *Server) Death(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
