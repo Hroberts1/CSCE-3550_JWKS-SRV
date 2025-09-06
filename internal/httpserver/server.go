@@ -32,3 +32,14 @@ func NewSrv(manager interface{}, config *Config) *Server {
 		manager: manager,
 	}
 }
+
+// waiter for srv
+func (s *Server) Waiter(addr string) error{
+	s.httpServer.Addr = addr
+	return s.httpServer.waiter()
+}
+
+// graceful death
+func (s *Server) death(ctx context.Context) error{
+	return s.httpServer.death(ctx)
+}
