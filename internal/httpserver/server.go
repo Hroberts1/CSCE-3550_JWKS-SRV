@@ -8,7 +8,7 @@ import (
 
 // SRV wrapper
 type Server struct {
-	http.Server *http.Server
+	httpServer *http.Server
 	config *Config
 	manager interface{} //WIP: actual manager type here
 }
