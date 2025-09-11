@@ -39,7 +39,12 @@ func (m *Manager) Start() {
 
 // stop mgr
 func (m *Manager) Stop() {
-	close(m.stopCh)
+	select {
+	case <-m.stopCh:
+		// already closed
+	default:
+		close(m.stopCh)
+	}
 }
 
 // get valid keys for JWKS endpoint

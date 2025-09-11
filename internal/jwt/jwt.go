@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -82,24 +81,37 @@ func signRS256(data []byte, privKey *rsa.PrivateKey) ([]byte, error) {
 // base64url encode
 func encodeBase64URL(data []byte) string {
 	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-
+	
+	if len(data) == 0 {
+		return ""
+	}
+	
 	encoded := ""
+	
+	// process 3 bytes at a time
 	for i := 0; i < len(data); i += 3 {
-		chunk := 0
-		chunkLen := 0
-
-		for j := 0; j < 3 && i+j < len(data); j++ {
-			chunk = (chunk << 8) | int(data[i+j])
-			chunkLen++
+		b1, b2, b3 := data[i], byte(0), byte(0)
+		if i+1 < len(data) {
+			b2 = data[i+1]
 		}
-
-		chunk <<= (3 - chunkLen) * 8
-
-		for j := 0; j < (chunkLen+1)*8/6; j++ {
-			encoded += string(alphabet[(chunk>>(18-j*6))&63])
+		if i+2 < len(data) {
+			b3 = data[i+2]
+		}
+		
+		// combine 3 bytes into 24 bits
+		combined := (uint32(b1) << 16) | (uint32(b2) << 8) | uint32(b3)
+		
+		// extract 6-bit chunks
+		encoded += string(alphabet[(combined>>18)&0x3F])
+		encoded += string(alphabet[(combined>>12)&0x3F])
+		
+		if i+1 < len(data) {
+			encoded += string(alphabet[(combined>>6)&0x3F])
+		}
+		if i+2 < len(data) {
+			encoded += string(alphabet[combined&0x3F])
 		}
 	}
-
-	// rm padding
-	return strings.TrimRight(encoded, "=")
+	
+	return encoded
 }
