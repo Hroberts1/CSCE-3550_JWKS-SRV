@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"csce-3550_jwks-srv/internal/httpserver"
-	// "csce-3550_jwks-srv/internal/keys" // TODO: add when keys package is ready
+	"csce-3550_jwks-srv/internal/keys"
 )
 
 func main() {
@@ -22,14 +22,14 @@ func main() {
 		logger.Fatalf("Config error: %v", err)
 	}
 
-	// key manager initialization - TODO: implement keys package
-	// manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	// key manager initialization
+	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
 
-	// start manager - TODO: uncomment when keys package ready
-	// manager.Start()
+	// start manager
+	manager.Start()
 
 	// http server creation
-	server := httpserver.NewSrv(nil, config) // TODO: pass actual manager
+	server := httpserver.NewSrv(manager, config)
 
 	// channel for OS sig
 	sigCh := make(chan os.Signal, 1)

@@ -39,7 +39,7 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf("invalid defaultJWTLifetime: %w", err)
 	}
 
-	// OverRide w/ env vars IF set AND valid
+	// override w/ env vars if set and valid
 	overrides := map[string]struct {
 		envKey string
 		target *time.Duration
@@ -49,7 +49,7 @@ func NewConfig() (*Config, error) {
 		"jwtLifetime": {"JWT_LIFETIME", &jwtLifetime},
 	}
 
-	// Duration overrides
+	// duration overrides
 	for name, override := range overrides {
 		if envVal := os.Getenv(override.envKey); envVal != "" {
 			if parsed, parseErr := time.ParseDuration(envVal); parseErr == nil {
