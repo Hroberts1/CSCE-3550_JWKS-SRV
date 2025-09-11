@@ -229,3 +229,4 @@ The AI assistance helped with:
 - **Standards Compliance**: Ensuring JWT and JWKS format adherence to RFC specifications
 - **Testing Strategy**: Comprehensive unit test suite with high coverage targets
 - **Error Handling**: Robust error patterns and graceful degradation
+- **Documentation**: Creating the README
