@@ -37,6 +37,7 @@ func main() {
 
 	// spin up http srv in a goroutine
 	go func() {
+		logger.Println("Server starting on :8080")
 		if err := server.Waiter(":8080"); err != nil {
 			logger.Printf("HTTP server error: %v", err)
 		}
