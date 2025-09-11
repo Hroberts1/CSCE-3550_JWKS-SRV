@@ -66,7 +66,7 @@ func TestGenerateKID(t *testing.T) {
 
 func TestKeyIsExpired(t *testing.T) {
 	now := time.Now()
-	
+
 	// not expired key
 	key := &Key{
 		ID:        "test-key",

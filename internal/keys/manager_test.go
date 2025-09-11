@@ -34,7 +34,7 @@ func TestNewManager(t *testing.T) {
 
 func TestManagerStart(t *testing.T) {
 	manager := NewManager(time.Minute, time.Hour)
-	
+
 	// start should generate initial key
 	manager.Start()
 	defer manager.Stop()
@@ -134,7 +134,7 @@ func TestManagerGetJWKS(t *testing.T) {
 
 func TestManagerRotateKey(t *testing.T) {
 	manager := NewManager(time.Minute, time.Hour)
-	
+
 	// manually rotate key to test
 	err := manager.rotateKey()
 	if err != nil {
@@ -165,30 +165,30 @@ func TestManagerRotateKey(t *testing.T) {
 
 func TestManagerCleanup(t *testing.T) {
 	manager := NewManager(time.Minute, time.Millisecond) // very short retain period
-	
+
 	// add an old expired key manually
 	oldKey := &Key{
 		ID:        "old-key",
 		CreatedAt: time.Now().Add(-2 * time.Hour),
 		ExpiresAt: time.Now().Add(-time.Hour),
 	}
-	
+
 	manager.keys[oldKey.ID] = oldKey
-	
+
 	// add current key
 	manager.rotateKey()
-	
+
 	initialCount := len(manager.keys)
-	
+
 	// run cleanup
 	time.Sleep(2 * time.Millisecond) // wait for retain period
 	manager.cleanup()
-	
+
 	// old key should be removed
 	if len(manager.keys) >= initialCount {
 		t.Error("Cleanup did not remove old keys")
 	}
-	
+
 	if _, exists := manager.keys[oldKey.ID]; exists {
 		t.Error("Old expired key still exists after cleanup")
 	}

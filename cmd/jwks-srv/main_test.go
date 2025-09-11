@@ -8,7 +8,7 @@ import (
 func TestMainComponents(t *testing.T) {
 	// test that we can import all required packages
 	// and basic functionality works without panicking
-	
+
 	// clear env vars for predictable test
 	os.Unsetenv("KEY_LIFETIME")
 	os.Unsetenv("KEY_RETAIN")
@@ -17,7 +17,7 @@ func TestMainComponents(t *testing.T) {
 
 	// this test just verifies imports and basic setup work
 	// actual main() function is tested through integration tests
-	
+
 	// placeholder test to get coverage
 	if true {
 		t.Log("Main package imports working correctly")
