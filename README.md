@@ -2,7 +2,7 @@
 
 A RESTful JWKS (JSON Web Key Set) server implementation in Go that provides RSA public keys for JWT verification with automatic key rotation and expiry management.
 
-## 🎯 Project Overview
+## Project Overview
 
 This project implements a complete JWKS server that:
 - Generates and manages RSA key pairs with unique identifiers (kid)
@@ -11,19 +11,19 @@ This project implements a complete JWKS server that:
 - Implements automatic key rotation and cleanup
 - Provides comprehensive middleware for security and monitoring
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 CSCE-3550_JWKS-SRV/
-├── cmd/jwks-srv/           # Main application entry point
-├── internal/
-│   ├── httpserver/         # HTTP server, config, handlers, middleware
-│   ├── keys/              # RSA key management, JWKS format, rotation
-│   └── jwt/               # JWT creation and RS256 signing
-└── *_test.go              # Comprehensive test suite (80%+ coverage)
++-- cmd/jwks-srv/           # Main application entry point
++-- internal/
+|   +-- httpserver/         # HTTP server, config, handlers, middleware
+|   +-- keys/               # RSA key management, JWKS format, rotation
+|   +-- jwt/                # JWT creation and RS256 signing
++-- *_test.go               # Comprehensive test suite (80%+ coverage)
 ```
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
 - **RSA Key Generation**: 2048-bit RSA key pairs with unique kid identifiers
@@ -45,7 +45,7 @@ CSCE-3550_JWKS-SRV/
 - Panic recovery middleware
 - Content-type validation
 
-## 🛠️ Configuration
+## Configuration
 
 Configure the server using environment variables:
 
@@ -57,18 +57,18 @@ JWT_LIFETIME=5m       # JWT token expiry time
 ISSUER=jwks-server    # JWT issuer identifier
 ```
 
-## 📋 Requirements Met
+## Requirements Met
 
-✅ **RSA key pair generation** with kid and expiry timestamps  
-✅ **HTTP server on port 8080** with RESTful endpoints  
-✅ **JWKS format compliance** serving only valid keys  
-✅ **JWT token issuance** with RS256 signing  
-✅ **Expired key handling** via query parameter  
-✅ **Comprehensive documentation** and code organization  
-✅ **80%+ test coverage** across all packages  
-✅ **Standards compliance** (RFC 7517, RFC 7519)  
+[x] **RSA key pair generation** with kid and expiry timestamps  
+[x] **HTTP server on port 8080** with RESTful endpoints  
+[x] **JWKS format compliance** serving only valid keys  
+[x] **JWT token issuance** with RS256 signing  
+[x] **Expired key handling** via query parameter  
+[x] **Comprehensive documentation** and code organization  
+[x] **80%+ test coverage** across all packages  
+[x] **Standards compliance** (RFC 7517, RFC 7519)  
 
-## 🏃 Running the Server
+## Running the Server
 
 ### Local Development
 ```bash
@@ -88,7 +88,7 @@ go build -o jwks-server cmd/jwks-srv/main.go
 KEY_LIFETIME=30m JWT_LIFETIME=10m ./jwks-server
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Run Unit Tests
 ```bash
@@ -166,7 +166,7 @@ go test -bench=. ./...
 - **JWKS Serialization**: ~0.1ms per key set
 - **Concurrent Requests**: Supports 1000+ concurrent connections
 
-## 📚 Educational Objectives
+## Educational Objectives
 
 This project demonstrates:
 - **RESTful API Design**: Proper HTTP methods and status codes
