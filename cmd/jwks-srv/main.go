@@ -23,10 +23,15 @@ func main() {
 	}
 
 	// key manager initialization
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		logger.Fatalf("Key manager initialization error: %v", err)
+	}
 
 	// start manager
-	manager.Start()
+	if err := manager.Start(); err != nil {
+		logger.Fatalf("Key manager start error: %v", err)
+	}
 
 	// http server creation
 	server := httpserver.NewSrv(manager, config)
@@ -50,6 +55,10 @@ func main() {
 	// graceful death
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	// stop manager first
+	manager.Stop()
+
 	if err := server.Death(ctx); err != nil {
 		logger.Printf("Issue during death: %v", err)
 	}

@@ -18,7 +18,10 @@ func TestNewSrv(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	server := NewSrv(manager, config)
 
 	if server == nil {
@@ -46,7 +49,10 @@ func TestHandleJWKS(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	time.Sleep(100 * time.Millisecond) // allow key generation
 	defer manager.Stop()
@@ -87,7 +93,10 @@ func TestHandleJWKSMethodNotAllowed(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	server := NewSrv(manager, config)
 
 	req, err := http.NewRequest("POST", "/jwks", nil)
@@ -113,7 +122,10 @@ func TestHandleAuth(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	time.Sleep(100 * time.Millisecond) // allow key generation
 	defer manager.Stop()
@@ -154,7 +166,10 @@ func TestHandleAuthWithExpired(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	time.Sleep(100 * time.Millisecond) // allow key generation
 	defer manager.Stop()
@@ -189,7 +204,10 @@ func TestHandleAuthMethodNotAllowed(t *testing.T) {
 		Issuer:          "test-issuer",
 	}
 
-	manager := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	server := NewSrv(manager, config)
 
 	req, err := http.NewRequest("GET", "/auth", nil)

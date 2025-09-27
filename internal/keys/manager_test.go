@@ -9,7 +9,10 @@ func TestNewManager(t *testing.T) {
 	keyLifetime := 10 * time.Minute
 	keyRetainPeriod := time.Hour
 
-	manager := NewManager(keyLifetime, keyRetainPeriod)
+	manager, err := NewManager(keyLifetime, keyRetainPeriod)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 
 	if manager == nil {
 		t.Fatal("NewManager returned nil")
@@ -33,7 +36,10 @@ func TestNewManager(t *testing.T) {
 }
 
 func TestManagerStart(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 
 	// start should generate initial key
 	manager.Start()
@@ -52,7 +58,10 @@ func TestManagerStart(t *testing.T) {
 }
 
 func TestManagerGetValidKeys(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	defer manager.Stop()
 
@@ -75,32 +84,44 @@ func TestManagerGetValidKeys(t *testing.T) {
 }
 
 func TestManagerGetSigningKey(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	defer manager.Stop()
 
 	// give it time to generate key
 	time.Sleep(100 * time.Millisecond)
 
-	// test getting current signing key
+	// test getting valid signing key from database
 	signingKey := manager.GetSigningKey(false)
 	if signingKey == nil {
 		t.Error("No signing key returned")
+		return
 	}
 
-	if signingKey != manager.currentKey {
-		t.Error("Signing key is not current key")
+	// verify the key has a valid ID from database
+	if signingKey.ID == "" {
+		t.Error("Signing key should have a valid ID from database")
 	}
 
-	// test getting expired key (should return current if no expired)
+	// test getting expired key (should return nil if no expired keys exist)
 	expiredKey := manager.GetSigningKey(true)
-	if expiredKey == nil {
-		t.Error("No expired key returned (should return current if none expired)")
+	// Note: expiredKey might be nil if no expired keys exist yet, which is correct behavior
+	if expiredKey != nil {
+		// if we got an expired key, verify it has an ID
+		if expiredKey.ID == "" {
+			t.Error("Expired key should have a valid ID from database")
+		}
 	}
 }
 
 func TestManagerGetJWKS(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 	defer manager.Stop()
 
@@ -133,10 +154,13 @@ func TestManagerGetJWKS(t *testing.T) {
 }
 
 func TestManagerRotateKey(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 
 	// manually rotate key to test
-	err := manager.rotateKey()
+	err = manager.rotateKey()
 	if err != nil {
 		t.Fatalf("rotateKey() error = %v", err)
 	}
@@ -164,7 +188,10 @@ func TestManagerRotateKey(t *testing.T) {
 }
 
 func TestManagerCleanup(t *testing.T) {
-	manager := NewManager(time.Minute, time.Millisecond) // very short retain period
+	manager, err := NewManager(time.Minute, time.Millisecond) // very short retain period
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 
 	// add an old expired key manually
 	oldKey := &Key{
@@ -195,7 +222,10 @@ func TestManagerCleanup(t *testing.T) {
 }
 
 func TestManagerStop(t *testing.T) {
-	manager := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour)
+	if err != nil {
+		t.Fatalf("NewManager error = %v", err)
+	}
 	manager.Start()
 
 	// stop should not panic
