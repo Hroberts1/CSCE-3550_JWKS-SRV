@@ -176,6 +176,10 @@ func TestHandleAuthWithExpired(t *testing.T) {
 
 	server := NewSrv(manager, config)
 
+	// Wait for the 10-second key to expire
+	t.Log("Waiting for 10-second key to expire...")
+	time.Sleep(11 * time.Second)
+
 	req, err := http.NewRequest("POST", "/auth?expired=true", nil)
 	if err != nil {
 		t.Fatal(err)
