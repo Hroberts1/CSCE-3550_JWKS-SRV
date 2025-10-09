@@ -11,6 +11,7 @@ This project implements a complete JWKS server that:
 - Issues JWT tokens for authentication testing with database-backed keys
 - Implements automatic key rotation and cleanup
 - Provides comprehensive middleware for security and monitoring
+- Written in Go
 
 ## Architecture
 
@@ -87,9 +88,16 @@ ISSUER=jwks-server    # JWT issuer identifier
 [x] **80%+ test coverage** across all packages  
 [x] **Standards compliance** (RFC 7517, RFC 7519)  
 
-## Prerequisites
+## System Requirements
 
-**Important**: This application requires CGO for SQLite support.
+### Supported Operating System
+- **Windows**: Windows 10, Windows 11, Windows Server 2016+
+
+### Requirements
+- **Go**: Version 1.16 or later
+- **C Compiler**: MinGW-w64 or TDM-GCC (required for SQLite/CGO support)
+- **PowerShell**: 5.1+ or PowerShell Core
+- **CGO**: Must be enabled for SQLite integration
 
 ### Windows Setup
 1. **Install a C Compiler** (required for SQLite):
