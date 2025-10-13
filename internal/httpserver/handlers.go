@@ -3,6 +3,7 @@ package httpserver
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"csce-3550_jwks-srv/internal/jwt"
 )
@@ -49,12 +50,19 @@ func (s *Server) handleAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// determine expiry - if expired=true, force expiry in the past
+	expiry := s.config.JWTLifetime
+	if expired {
+		// ensure the token is already expired when returned
+		expiry = -1 * time.Minute
+	}
+
 	// create JWT
 	token, err := jwt.CreateJWT(
 		signingKey.PrivateKey,
 		signingKey.ID,
 		s.config.Issuer,
-		s.config.JWTLifetime,
+		expiry,
 	)
 	if err != nil {
 		http.Error(w, "Failed to create JWT", http.StatusInternalServerError)
