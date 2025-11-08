@@ -194,15 +194,15 @@ func TestEmptyDatabase(t *testing.T) {
 // func TestInvalidEncryptionKey(t *testing.T) {
 // 	tempDir := t.TempDir()
 // 	dbPath := filepath.Join(tempDir, "test_invalid.db")
-// 
+//
 // 	// test with empty encryption key - should fail during encryptor creation
 // 	manager, err := NewManager(dbPath, "")
-// 	
+//
 // 	// cleanup if somehow created
 // 	if manager != nil && manager.database != nil {
 // 		manager.database.Close()
 // 	}
-// 	
+//
 // 	if err == nil {
 // 		t.Error("NewManager() should fail with empty encryption key")
 // 	}
@@ -387,7 +387,7 @@ func TestManagerDatabaseOperations(t *testing.T) {
 // func TestManagerInvalidEncryptionKey(t *testing.T) {
 // 	tempDir := t.TempDir()
 // 	dbPath := filepath.Join(tempDir, "test_invalid_enc.db")
-// 
+//
 // 	// test with empty encryption key - should fail during encryptor creation
 // 	_, err := NewManager(dbPath, "")
 // 	if err == nil {

@@ -1,1 +1,27 @@
+# Database files (contain encrypted keys and user data)
 totally_not_my_privateKeys.db
+internal/data/*.db
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Compiled binaries
+jwks-srv
+jwks-srv.exe
+*.exe
+!gradebot.exe
+
+# Test coverage
+*.out
+coverage.out
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

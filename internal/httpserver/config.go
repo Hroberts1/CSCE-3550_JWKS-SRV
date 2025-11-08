@@ -19,7 +19,7 @@ type Config struct {
 	KeyRetainPeriod time.Duration
 	JWTLifetime     time.Duration
 	Issuer          string
-	EncryptionKey string `json:"-"` // Never serialize this field
+	EncryptionKey   string `json:"-"` // Never serialize this field
 }
 
 func NewConfig() (*Config, error) {
