@@ -27,7 +27,7 @@ func NewSrv(manager *keys.Manager, config *Config) *Server {
 	// route regs w/ middleware
 	mux.Handle("/jwks", srv.applyMiddleware(srv.handleJWKS))
 	mux.Handle("/.well-known/jwks.json", srv.applyMiddleware(srv.handleJWKS))
-	mux.Handle("/auth", srv.applyMiddleware(srv.handleAuth))
+	mux.Handle("/auth", srv.applyAuthMiddleware(srv.handleAuth)) // special rate limiting for auth
 	mux.Handle("/register", srv.applyMiddleware(srv.handleRegister))
 
 	srv.httpServer = &http.Server{

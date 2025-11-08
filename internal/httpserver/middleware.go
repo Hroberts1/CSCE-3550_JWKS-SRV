@@ -70,7 +70,12 @@ type tokenBucket struct {
 	mu         sync.Mutex
 }
 
-// rate limiting middleware - prevents abuse
+// Global rate limiter for auth endpoint - 10 requests per second
+var authRateLimiter = &rateLimiter{
+	visitors: make(map[string]*visitor),
+}
+
+// rate limiting middleware - prevents abuse (general use)
 func RateLimitMiddleware(next http.Handler) http.Handler {
 	limiter := &rateLimiter{
 		visitors: make(map[string]*visitor),
@@ -78,7 +83,7 @@ func RateLimitMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ip := r.RemoteAddr
-		if !limiter.allow(ip) {
+		if !limiter.allow(ip, 10, time.Minute) {
 			http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
 		}
@@ -87,7 +92,47 @@ func RateLimitMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (rl *rateLimiter) allow(ip string) bool {
+// AuthRateLimitMiddleware - specific rate limiter for /auth endpoint (10 req/sec)
+func AuthRateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ip := getClientIP(r)
+		// For 10 req/sec: 1 token refills every 100ms (time.Second / 10)
+		if !authRateLimiter.allow(ip, 10, time.Second/10) {
+			http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// getClientIP extracts the client IP address from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header
+	xff := r.Header.Get("X-Forwarded-For")
+	if xff != "" {
+		// Take the first IP in the list
+		if idx := strings.Index(xff, ","); idx != -1 {
+			return strings.TrimSpace(xff[:idx])
+		}
+		return strings.TrimSpace(xff)
+	}
+
+	// Check X-Real-IP header
+	xri := r.Header.Get("X-Real-IP")
+	if xri != "" {
+		return strings.TrimSpace(xri)
+	}
+
+	// Fall back to RemoteAddr
+	ip := r.RemoteAddr
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		return ip[:idx]
+	}
+	return ip
+}
+
+func (rl *rateLimiter) allow(ip string, capacity int, refillRate time.Duration) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
@@ -95,9 +140,9 @@ func (rl *rateLimiter) allow(ip string) bool {
 	if !exists {
 		vis = &visitor{
 			limiter: &tokenBucket{
-				tokens:     10,
-				capacity:   10,
-				refillRate: time.Minute,
+				tokens:     capacity,
+				capacity:   capacity,
+				refillRate: refillRate,
 				lastRefill: time.Now(),
 			},
 			lastSeen: time.Now(),
@@ -113,18 +158,34 @@ func (tb *tokenBucket) consume() bool {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
-	// refill tokens
+	// refill tokens based on time elapsed
 	now := time.Now()
-	if now.Sub(tb.lastRefill) >= tb.refillRate {
-		tb.tokens = tb.capacity
+	elapsed := now.Sub(tb.lastRefill)
+
+	// Calculate how many tokens to add based on elapsed time
+	// For 10 req/sec: refillRate = time.Second, so we add 10 tokens per second
+	// For other rates: tokens to add = elapsed / refillRate * capacity
+	tokensToAdd := int(elapsed / tb.refillRate)
+
+	if tokensToAdd > 0 {
+		tb.tokens = min(tb.capacity, tb.tokens+tokensToAdd)
 		tb.lastRefill = now
 	}
 
+	// consume a token if available
 	if tb.tokens > 0 {
 		tb.tokens--
 		return true
 	}
+
 	return false
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // content-type validation middleware

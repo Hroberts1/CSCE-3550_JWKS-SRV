@@ -49,11 +49,15 @@ func (s *Server) handleAuth(w http.ResponseWriter, r *http.Request) {
 	// extract request IP address
 	requestIP := s.getRequestIP(r)
 
-	// parse request body to get username
+	// parse request body to get username (optional)
 	var authReq AuthRequest
 	username := ""
-	if err := json.NewDecoder(r.Body).Decode(&authReq); err == nil {
-		username = authReq.Username
+
+	// only try to decode if there's a body
+	if r.Body != nil && r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&authReq); err == nil {
+			username = authReq.Username
+		}
 	}
 	// if parsing fails or no username provided, we still proceed but log with empty username
 
@@ -206,6 +210,21 @@ func (s *Server) applyMiddleware(handler http.HandlerFunc) http.Handler {
 	h = SecurityHeadersMiddleware(h)
 	h = CORSMiddleware(h)
 	h = RateLimitMiddleware(h)
+	h = LoggingMiddleware(h)
+
+	return h
+}
+
+// apply middleware chain for /auth endpoint with specific rate limiting
+func (s *Server) applyAuthMiddleware(handler http.HandlerFunc) http.Handler {
+	// chain middleware in reverse order
+	h := http.Handler(handler)
+
+	// add middleware stack with auth-specific rate limiter
+	h = RecoveryMiddleware(h)
+	h = SecurityHeadersMiddleware(h)
+	h = CORSMiddleware(h)
+	h = AuthRateLimitMiddleware(h) // 10 requests per second
 	h = LoggingMiddleware(h)
 
 	return h
