@@ -8,8 +8,9 @@ import (
 func TestNewManager(t *testing.T) {
 	keyLifetime := 10 * time.Minute
 	keyRetainPeriod := time.Hour
+	encryptionKey := "test-encryption-key-123"
 
-	manager, err := NewManager(keyLifetime, keyRetainPeriod)
+	manager, err := NewManager(keyLifetime, keyRetainPeriod, encryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -36,7 +37,7 @@ func TestNewManager(t *testing.T) {
 }
 
 func TestManagerStart(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -58,7 +59,7 @@ func TestManagerStart(t *testing.T) {
 }
 
 func TestManagerGetValidKeys(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -84,7 +85,7 @@ func TestManagerGetValidKeys(t *testing.T) {
 }
 
 func TestManagerGetSigningKey(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -118,7 +119,7 @@ func TestManagerGetSigningKey(t *testing.T) {
 }
 
 func TestManagerGetJWKS(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -154,7 +155,7 @@ func TestManagerGetJWKS(t *testing.T) {
 }
 
 func TestManagerRotateKey(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -188,7 +189,7 @@ func TestManagerRotateKey(t *testing.T) {
 }
 
 func TestManagerCleanup(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Millisecond) // very short retain period
+	manager, err := NewManager(time.Minute, time.Millisecond, "test-encryption-key-123") // very short retain period
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -222,7 +223,7 @@ func TestManagerCleanup(t *testing.T) {
 }
 
 func TestManagerStop(t *testing.T) {
-	manager, err := NewManager(time.Minute, time.Hour)
+	manager, err := NewManager(time.Minute, time.Hour, "test-encryption-key-123")
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}

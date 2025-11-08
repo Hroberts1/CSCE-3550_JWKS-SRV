@@ -16,9 +16,10 @@ func TestNewSrv(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -47,9 +48,10 @@ func TestHandleJWKS(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -91,9 +93,10 @@ func TestHandleJWKSMethodNotAllowed(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -120,9 +123,10 @@ func TestHandleAuth(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -164,9 +168,10 @@ func TestHandleAuthWithExpired(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
@@ -206,9 +211,10 @@ func TestHandleAuthMethodNotAllowed(t *testing.T) {
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
+		EncryptionKey:   "test-encryption-key-123",
 	}
 
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
