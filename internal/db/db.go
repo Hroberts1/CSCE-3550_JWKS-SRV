@@ -694,7 +694,7 @@ func (db *Database) GetAuthLogs(limit int) ([]*AuthLog, error) {
 	query := `SELECT id, request_ip, request_timestamp, user_id 
 			  FROM auth_logs 
 			  ORDER BY request_timestamp DESC`
-	
+
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
