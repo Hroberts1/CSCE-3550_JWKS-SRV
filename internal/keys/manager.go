@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"strconv"
 	"sync"
@@ -47,9 +48,9 @@ func NewManager(keyLifetime, keyRetainPeriod time.Duration, encryptionKey string
 
 // start background rotation & cleanup
 func (m *Manager) Start() error {
-	// generate test keys on startup
-	if err := m.database.GenerateAndSaveTestKeys(); err != nil {
-		return fmt.Errorf("failed to generate test keys: %w", err)
+	// generate encrypted test keys on startup
+	if err := m.generateEncryptedTestKeys(); err != nil {
+		return fmt.Errorf("failed to generate encrypted test keys: %w", err)
 	}
 
 	// gen initial key
@@ -59,6 +60,39 @@ func (m *Manager) Start() error {
 
 	go m.rotationLoop()
 	go m.cleanupLoop()
+
+	return nil
+}
+
+// generateEncryptedTestKeys creates 3 encrypted test keys with different expiry times
+func (m *Manager) generateEncryptedTestKeys() error {
+	keyPairs := []struct {
+		name     string
+		duration time.Duration
+	}{
+		{"10 second key", 10 * time.Second},
+		{"5 minute key", 5 * time.Minute},
+		{"1 hour key", 1 * time.Hour},
+	}
+
+	for _, kp := range keyPairs {
+		// generate RSA key pair
+		privateKey, err := GenerateRSAKeyPair()
+		if err != nil {
+			return fmt.Errorf("failed to generate %s: %w", kp.name, err)
+		}
+
+		// calculate expiry time
+		expTime := time.Now().Add(kp.duration)
+
+		// save to encrypted database
+		kid, err := m.dbManager.StoreKey(privateKey.PrivateKey, expTime)
+		if err != nil {
+			return fmt.Errorf("failed to save encrypted %s: %w", kp.name, err)
+		}
+
+		fmt.Printf("Generated encrypted %s with kid: %d, expires: %s\n", kp.name, kid, expTime.Format(time.RFC3339))
+	}
 
 	return nil
 }
@@ -80,6 +114,24 @@ func (m *Manager) Stop() {
 
 // get valid keys for JWKS endpoint
 func (m *Manager) GetValidKeys() []*Key {
+	// try encrypted keys first
+	encryptedKeys, err := m.dbManager.GetValidKeys()
+	if err == nil && len(encryptedKeys) > 0 {
+		keys := make([]*Key, 0, len(encryptedKeys))
+		for kidInt, privateKey := range encryptedKeys {
+			key := &Key{
+				ID:         strconv.Itoa(kidInt),
+				CreatedAt:  time.Now().Add(-m.keyLifetime), // approximate creation time
+				ExpiresAt:  time.Now().Add(m.keyLifetime),  // approximate expiry time
+				PrivateKey: privateKey,
+				PublicKey:  &privateKey.PublicKey,
+			}
+			keys = append(keys, key)
+		}
+		return keys
+	}
+
+	// fallback to old unencrypted keys
 	keyRecords, err := m.database.GetValidKeys()
 	if err != nil {
 		return []*Key{}
@@ -102,8 +154,31 @@ func (m *Manager) GetValidKeys() []*Key {
 
 // get signing key for auth endpoint
 func (m *Manager) GetSigningKey(expired bool) *Key {
-	var keyRecord *db.KeyRecord
+	// try encrypted keys first
+	var encryptedKeys map[int]*rsa.PrivateKey
 	var err error
+
+	if expired {
+		encryptedKeys, err = m.dbManager.GetExpiredKeys()
+	} else {
+		encryptedKeys, err = m.dbManager.GetValidKeys()
+	}
+
+	if err == nil && len(encryptedKeys) > 0 {
+		// return first available encrypted key
+		for kidInt, privateKey := range encryptedKeys {
+			return &Key{
+				ID:         strconv.Itoa(kidInt),
+				CreatedAt:  time.Now().Add(-m.keyLifetime), // approximate creation time
+				ExpiresAt:  time.Now().Add(m.keyLifetime),  // approximate expiry time
+				PrivateKey: privateKey,
+				PublicKey:  &privateKey.PublicKey,
+			}
+		}
+	}
+
+	// fallback to old unencrypted keys
+	var keyRecord *db.KeyRecord
 
 	if expired {
 		// get any expired key from database
@@ -133,6 +208,17 @@ func (m *Manager) rotateKey() error {
 	if err != nil {
 		return err
 	}
+
+	// store the new key in encrypted database
+	expiry := time.Now().Add(m.keyLifetime)
+	kidInt, err := m.dbManager.StoreKey(newKey.PrivateKey, expiry)
+	if err != nil {
+		return fmt.Errorf("failed to store encrypted key: %w", err)
+	}
+
+	// update the key ID to match database
+	newKey.ID = fmt.Sprintf("%d", kidInt)
+	newKey.ExpiresAt = expiry
 
 	m.mu.Lock()
 	defer m.mu.Unlock()

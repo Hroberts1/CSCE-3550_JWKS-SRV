@@ -365,8 +365,19 @@ type Manager struct {
 }
 
 func NewManager(dbPath, encryptionKey string) (*Manager, error) {
-	// Initialize database
-	database, err := NewDatabase()
+	// Initialize database - use provided path or default
+	var database *Database
+	var err error
+
+	if dbPath != "" {
+		// Create database with custom path for testing
+		database = &Database{path: dbPath}
+		err = database.initForManager()
+	} else {
+		// Use default database creation
+		database, err = NewDatabase()
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -381,6 +392,38 @@ func NewManager(dbPath, encryptionKey string) (*Manager, error) {
 		database:  database,
 		encryptor: encryptor,
 	}, nil
+}
+
+// initForManager initializes database connection for Manager (similar to initForTest but for production use)
+func (db *Database) initForManager() error {
+	// ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(db.path), 0755); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	// create database file if it doesn't exist
+	if _, err := os.Stat(db.path); os.IsNotExist(err) {
+		file, err := os.Create(db.path)
+		if err != nil {
+			return fmt.Errorf("failed to create database file: %w", err)
+		}
+		file.Close()
+
+		// set restrictive permissions
+		if err := os.Chmod(db.path, 0600); err != nil {
+			return fmt.Errorf("failed to set database permissions: %w", err)
+		}
+	}
+
+	// open database connection
+	conn, err := sql.Open("sqlite3", db.path)
+	if err != nil {
+		return fmt.Errorf("failed to open database: %w", err)
+	}
+	db.conn = conn
+
+	// initialize schema
+	return db.initSchema()
 }
 func (m *Manager) StoreKey(privateKey *rsa.PrivateKey, expiry time.Time) (int, error) {
 	// Serialize to PKCS1 PEM format
