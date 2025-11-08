@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -18,6 +19,7 @@ type Config struct {
 	KeyRetainPeriod time.Duration
 	JWTLifetime     time.Duration
 	Issuer          string
+	EncryptionKey string `json:"-"` // Never serialize this field
 }
 
 func NewConfig() (*Config, error) {
@@ -65,10 +67,17 @@ func NewConfig() (*Config, error) {
 		issuer = envIssuer
 	}
 
+	// Load encryption key from environment
+	encryptionKey := os.Getenv("NOT_MY_KEY")
+	if encryptionKey == "" {
+		log.Fatal("NOT_MY_KEY environment variable is required for database encryption")
+	}
+
 	return &Config{
 		KeyLifetime:     keyLifetime,
 		KeyRetainPeriod: keyRetain,
 		JWTLifetime:     jwtLifetime,
 		Issuer:          issuer,
+		EncryptionKey:   encryptionKey,
 	}, nil
 }
