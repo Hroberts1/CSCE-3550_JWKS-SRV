@@ -381,3 +381,33 @@ func NewManager(dbPath, encryptionKey string) (*Manager, error) {
 		encryptor: encryptor,
 	}, nil
 }
+func (m *Manager) StoreKey(privateKey *rsa.PrivateKey, expiry time.Time) (int, error) {
+	// Serialize to PKCS1 PEM format
+	pkcs1Bytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	pemBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: pkcs1Bytes,
+	}
+	pemData := pem.EncodeToMemory(pemBlock)
+
+	// Encrypt the PEM data
+	encryptedData, err := m.encryptor.Encrypt(pemData)
+	if err != nil {
+		return 0, fmt.Errorf("failed to encrypt private key: %w", err)
+	}
+
+	// Store encrypted data in database
+	query := "INSERT INTO keys (key, exp) VALUES (?, ?)"
+	result, err := m.db.Exec(query, encryptedData, expiry.Unix())
+	if err != nil {
+		return 0, fmt.Errorf("failed to store encrypted key: %w", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get key ID: %w", err)
+	}
+
+	return int(id), nil
+}
+
