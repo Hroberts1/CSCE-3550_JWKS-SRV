@@ -118,21 +118,26 @@ func TestHandleJWKSMethodNotAllowed(t *testing.T) {
 }
 
 func TestHandleAuth(t *testing.T) {
+	encryptionKey := "test-encryption-key-32-bytes-long" // Match the environment variable
 	config := &Config{
 		KeyLifetime:     10 * time.Minute,
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
-		EncryptionKey:   "test-encryption-key-123",
+		EncryptionKey:   encryptionKey,
 	}
 
 	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
-	manager.Start()
-	time.Sleep(100 * time.Millisecond) // allow key generation
+	if err := manager.Start(); err != nil {
+		t.Fatalf("Manager.Start() error = %v", err)
+	}
 	defer manager.Stop()
+
+	// Wait longer for key generation
+	time.Sleep(3 * time.Second)
 
 	server := NewSrv(manager, config)
 
@@ -147,8 +152,8 @@ func TestHandleAuth(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+		t.Errorf("handler returned wrong status code: got %v want %v (body: %s)",
+			status, http.StatusOK, rr.Body.String())
 	}
 
 	if contentType := rr.Header().Get("Content-Type"); contentType != "application/json" {
@@ -163,21 +168,26 @@ func TestHandleAuth(t *testing.T) {
 }
 
 func TestHandleAuthWithExpired(t *testing.T) {
+	encryptionKey := "test-encryption-key-32-bytes-long" // Match the environment variable
 	config := &Config{
 		KeyLifetime:     10 * time.Minute,
 		KeyRetainPeriod: time.Hour,
 		JWTLifetime:     5 * time.Minute,
 		Issuer:          "test-issuer",
-		EncryptionKey:   "test-encryption-key-123",
+		EncryptionKey:   encryptionKey,
 	}
 
 	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		t.Fatalf("NewManager error = %v", err)
 	}
-	manager.Start()
-	time.Sleep(100 * time.Millisecond) // allow key generation
+	if err := manager.Start(); err != nil {
+		t.Fatalf("Manager.Start() error = %v", err)
+	}
 	defer manager.Stop()
+
+	// Wait longer for key generation
+	time.Sleep(3 * time.Second)
 
 	server := NewSrv(manager, config)
 
