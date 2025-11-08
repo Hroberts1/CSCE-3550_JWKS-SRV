@@ -79,18 +79,35 @@ func NewDatabase() (*Database, error) {
 	return db, nil
 }
 
-// initSchema creates the keys table if it doesn't exist
+// initSchema creates the keys and users tables if they don't exist
 func (db *Database) initSchema() error {
-	query := `
+	// Create keys table
+	keysQuery := `
 	CREATE TABLE IF NOT EXISTS keys(
 		kid INTEGER PRIMARY KEY AUTOINCREMENT,
 		key BLOB NOT NULL,
 		exp INTEGER NOT NULL
 	);`
 
-	_, err := db.conn.Exec(query)
+	_, err := db.conn.Exec(keysQuery)
 	if err != nil {
 		return fmt.Errorf("failed to create keys table: %w", err)
+	}
+
+	// Create users table for user registration
+	usersQuery := `
+	CREATE TABLE IF NOT EXISTS users(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		email TEXT UNIQUE,
+		date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		last_login TIMESTAMP      
+	);`
+
+	_, err = db.conn.Exec(usersQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create users table: %w", err)
 	}
 
 	return nil
