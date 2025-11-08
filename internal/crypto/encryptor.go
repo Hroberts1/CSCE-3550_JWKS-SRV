@@ -44,3 +44,24 @@ func NewEncryptor(passphrase string) (*Encryptor, error) {
 	return &Encryptor{aead: aead}, nil
 }
 
+// Encrypt encrypts plaintext data using AES-GCM with a randomly generated nonce.
+// The nonce is prepended to the ciphertext for retrieval during decryption.
+// Returns an error if random nonce generation fails.
+func (e *Encryptor) Encrypt(plaintext []byte) ([]byte, error) {
+	if len(plaintext) == 0 {
+		// allow encrypting empty data
+		plaintext = []byte{}
+	}
+
+	// generate random nonce
+	nonce := make([]byte, e.aead.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, fmt.Errorf("failed to generate nonce: %w", err)
+	}
+
+	// encrypt and authenticate data, prepending nonce to ciphertext
+	ciphertext := e.aead.Seal(nonce, nonce, plaintext, nil)
+	return ciphertext, nil
+}
+
+
