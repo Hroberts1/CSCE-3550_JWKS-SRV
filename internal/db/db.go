@@ -3,15 +3,21 @@ package db
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/subtle"
 	"crypto/x509"
 	"database/sql"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"csce-3550_jwks-srv/internal/crypto"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/argon2"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -517,4 +523,123 @@ func (m *Manager) getKeys(query string, args ...interface{}) (map[int]*rsa.Priva
 	}
 
 	return keys, nil
+}
+
+// User represents a user record in the database
+type User struct {
+	ID             int64     `json:"id"`
+	Username       string    `json:"username"`
+	PasswordHash   string    `json:"-"`  // never include in JSON responses
+	Email          string    `json:"email"`
+	DateRegistered time.Time `json:"date_registered"`
+	LastLogin      *time.Time `json:"last_login,omitempty"`
+}
+
+// Argon2 configuration parameters
+type Argon2Config struct {
+	Time      uint32 // number of iterations
+	Memory    uint32 // memory usage in KB
+	Threads   uint8  // number of parallel threads
+	KeyLength uint32 // length of the derived key
+}
+
+// Default Argon2 configuration (recommended values)
+var DefaultArgon2Config = Argon2Config{
+	Time:      3,      // 3 iterations
+	Memory:    64 * 1024, // 64 MB
+	Threads:   4,      // 4 threads
+	KeyLength: 32,     // 32 bytes key length
+}
+
+// CreateUser creates a new user with a generated password
+func (db *Database) CreateUser(username, email string) (string, error) {
+	// generate secure password using UUIDv4
+	password := uuid.New().String()
+
+	// generate random salt
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", fmt.Errorf("failed to generate salt: %w", err)
+	}
+
+	// hash password with Argon2
+	hash := argon2.IDKey([]byte(password), salt, DefaultArgon2Config.Time, 
+		DefaultArgon2Config.Memory, DefaultArgon2Config.Threads, DefaultArgon2Config.KeyLength)
+
+	// encode salt and hash for storage (salt:hash format in base64)
+	saltB64 := base64.StdEncoding.EncodeToString(salt)
+	hashB64 := base64.StdEncoding.EncodeToString(hash)
+	passwordHash := fmt.Sprintf("%s:%s", saltB64, hashB64)
+
+	// insert user into database
+	query := `INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)`
+	_, err := db.conn.Exec(query, username, passwordHash, email)
+	if err != nil {
+		return "", fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return password, nil
+}
+
+// GetUserByUsername retrieves a user by username
+func (db *Database) GetUserByUsername(username string) (*User, error) {
+	query := `SELECT id, username, password_hash, email, date_registered, last_login 
+			  FROM users WHERE username = ?`
+
+	var user User
+	var lastLogin sql.NullTime
+
+	err := db.conn.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &user.PasswordHash, 
+		&user.Email, &user.DateRegistered, &lastLogin,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	if lastLogin.Valid {
+		user.LastLogin = &lastLogin.Time
+	}
+
+	return &user, nil
+}
+
+// VerifyPassword verifies a password against the stored hash
+func (db *Database) VerifyPassword(username, password string) (bool, error) {
+	user, err := db.GetUserByUsername(username)
+	if err != nil {
+		return false, err
+	}
+
+	// split stored hash into salt and hash components
+	parts := strings.Split(user.PasswordHash, ":")
+	if len(parts) != 2 {
+		return false, fmt.Errorf("invalid password hash format")
+	}
+
+	// decode salt and hash
+	salt, err := base64.StdEncoding.DecodeString(parts[0])
+	if err != nil {
+		return false, fmt.Errorf("failed to decode salt: %w", err)
+	}
+
+	storedHash, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false, fmt.Errorf("failed to decode hash: %w", err)
+	}
+
+	// hash the provided password with the same salt
+	computedHash := argon2.IDKey([]byte(password), salt, DefaultArgon2Config.Time,
+		DefaultArgon2Config.Memory, DefaultArgon2Config.Threads, DefaultArgon2Config.KeyLength)
+
+	// constant time comparison
+	return subtle.ConstantTimeCompare(storedHash, computedHash) == 1, nil
+}
+
+// CreateUser creates a new user via the manager
+func (m *Manager) CreateUser(username, email string) (string, error) {
+	return m.database.CreateUser(username, email)
 }

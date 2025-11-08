@@ -28,6 +28,7 @@ func NewSrv(manager *keys.Manager, config *Config) *Server {
 	mux.Handle("/jwks", srv.applyMiddleware(srv.handleJWKS))
 	mux.Handle("/.well-known/jwks.json", srv.applyMiddleware(srv.handleJWKS))
 	mux.Handle("/auth", srv.applyMiddleware(srv.handleAuth))
+	mux.Handle("/register", srv.applyMiddleware(srv.handleRegister))
 
 	srv.httpServer = &http.Server{
 		Handler:      mux,
@@ -48,4 +49,9 @@ func (s *Server) Waiter(addr string) error {
 // graceful death
 func (s *Server) Death(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
+}
+
+// Handler returns the underlying HTTP handler for testing
+func (s *Server) Handler() http.Handler {
+	return s.httpServer.Handler
 }

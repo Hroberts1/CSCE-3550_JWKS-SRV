@@ -227,3 +227,8 @@ func (m *Manager) cleanup() {
 		}
 	}
 }
+
+// CreateUser creates a new user via the database manager
+func (m *Manager) CreateUser(username, email string) (string, error) {
+	return m.dbManager.CreateUser(username, email)
+}
