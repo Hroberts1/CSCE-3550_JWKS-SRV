@@ -411,3 +411,35 @@ func (m *Manager) StoreKey(privateKey *rsa.PrivateKey, expiry time.Time) (int, e
 	return int(id), nil
 }
 
+func (m *Manager) GetValidKeys() (map[int]*rsa.PrivateKey, error) {
+	return m.getKeys("SELECT kid, key FROM keys WHERE exp > ?", time.Now().Unix())
+}
+
+func (m *Manager) GetExpiredKeys() (map[int]*rsa.PrivateKey, error) {
+	return m.getKeys("SELECT kid, key FROM keys WHERE exp <= ?", time.Now().Unix())
+}
+
+func (m *Manager) getKeys(query string, args ...interface{}) (map[int]*rsa.PrivateKey, error) {
+	rows, err := m.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query keys: %w", err)
+	}
+	defer rows.Close()
+
+	keys := make(map[int]*rsa.PrivateKey)
+	for rows.Next() {
+		var kid int
+		var encryptedData []byte
+
+		if err := rows.Scan(&kid, &encryptedData); err != nil {
+			return nil, fmt.Errorf("failed to scan key row: %w", err)
+		}
+
+		// Decrypt the PEM data
+		pemData, err := m.encryptor.Decrypt(encryptedData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decrypt key %d: %w", kid, err)
+		}
+
+	}
+}
