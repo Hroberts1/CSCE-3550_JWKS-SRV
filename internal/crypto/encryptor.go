@@ -64,4 +64,24 @@ func (e *Encryptor) Encrypt(plaintext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// Decrypt decrypts ciphertext data using AES-GCM.
+// The nonce is expected to be prepended to the ciphertext.
+// Returns ErrCiphertextTooShort if the ciphertext is too short to contain a valid nonce.
+func (e *Encryptor) Decrypt(ciphertext []byte) ([]byte, error) {
+	nonceSize := e.aead.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return nil, ErrCiphertextTooShort
+	}
 
+	// extract nonce and encrypted data
+	nonce := ciphertext[:nonceSize]
+	encryptedData := ciphertext[nonceSize:]
+
+	// decrypt and authenticate data
+	plaintext, err := e.aead.Open(nil, nonce, encryptedData, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+
+	return plaintext, nil
+}
