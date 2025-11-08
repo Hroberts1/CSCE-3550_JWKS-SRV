@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"csce-3550_jwks-srv/internal/crypto"
+
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/your-repo/internal/crypto"
 )
 
 // Database represents our SQLite database connection
@@ -359,13 +360,13 @@ func deserializePEMKey(pemData []byte) (*rsa.PrivateKey, error) {
 }
 
 type Manager struct {
-	db        *sql.DB
+	database  *Database
 	encryptor *crypto.Encryptor
 }
 
 func NewManager(dbPath, encryptionKey string) (*Manager, error) {
 	// Initialize database
-	db, err := NewDatabase()
+	database, err := NewDatabase()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -377,7 +378,7 @@ func NewManager(dbPath, encryptionKey string) (*Manager, error) {
 	}
 
 	return &Manager{
-		db:        db,
+		database:  database,
 		encryptor: encryptor,
 	}, nil
 }
@@ -398,7 +399,7 @@ func (m *Manager) StoreKey(privateKey *rsa.PrivateKey, expiry time.Time) (int, e
 
 	// Store encrypted data in database
 	query := "INSERT INTO keys (key, exp) VALUES (?, ?)"
-	result, err := m.db.Exec(query, encryptedData, expiry.Unix())
+	result, err := m.database.conn.Exec(query, encryptedData, expiry.Unix())
 	if err != nil {
 		return 0, fmt.Errorf("failed to store encrypted key: %w", err)
 	}
@@ -420,7 +421,7 @@ func (m *Manager) GetExpiredKeys() (map[int]*rsa.PrivateKey, error) {
 }
 
 func (m *Manager) getKeys(query string, args ...interface{}) (map[int]*rsa.PrivateKey, error) {
-	rows, err := m.db.Query(query, args...)
+	rows, err := m.database.conn.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query keys: %w", err)
 	}

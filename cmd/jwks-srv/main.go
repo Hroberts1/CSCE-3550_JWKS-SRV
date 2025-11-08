@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// key manager initialization
-	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod)
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
 	if err != nil {
 		logger.Fatalf("Key manager initialization error: %v", err)
 	}

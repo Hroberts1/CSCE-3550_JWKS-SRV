@@ -18,10 +18,18 @@ type Manager struct {
 	mu              sync.RWMutex
 	stopCh          chan struct{}
 	database        *db.Database
+	dbManager       *db.Manager
 }
 
 // create new key mgr
-func NewManager(keyLifetime, keyRetainPeriod time.Duration) (*Manager, error) {
+func NewManager(keyLifetime, keyRetainPeriod time.Duration, encryptionKey string) (*Manager, error) {
+	// Use encryption key from config
+	dbManager, err := db.NewManager("", encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database manager: %w", err)
+	}
+
+	// keep existing database for compatibility
 	database, err := db.NewDatabase()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
@@ -33,6 +41,7 @@ func NewManager(keyLifetime, keyRetainPeriod time.Duration) (*Manager, error) {
 		keys:            make(map[string]*Key),
 		stopCh:          make(chan struct{}),
 		database:        database,
+		dbManager:       dbManager,
 	}, nil
 }
 
