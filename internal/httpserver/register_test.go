@@ -19,7 +19,7 @@ func TestRegisterHandler(t *testing.T) {
 		testKey = testKey + "0123456789012345678901234567890123456789"
 	}
 	testKey = testKey[:32]
-	
+
 	manager, err := keys.NewManager(time.Hour, time.Hour*24, testKey)
 	if err != nil {
 		t.Fatalf("Failed to create key manager: %v", err)
@@ -162,7 +162,7 @@ func TestRegisterHandlerMethodNotAllowed(t *testing.T) {
 		testKey = testKey + "0123456789012345678901234567890123456789"
 	}
 	testKey = testKey[:32]
-	
+
 	manager, err := keys.NewManager(time.Hour, time.Hour*24, testKey)
 	if err != nil {
 		t.Fatalf("Failed to create key manager: %v", err)
@@ -191,7 +191,7 @@ func TestRegisterHandlerMethodNotAllowed(t *testing.T) {
 			server.handleRegister(rr, req)
 
 			if rr.Code != http.StatusMethodNotAllowed {
-				t.Errorf("Expected status %d for %s method, got %d", 
+				t.Errorf("Expected status %d for %s method, got %d",
 					http.StatusMethodNotAllowed, method, rr.Code)
 			}
 		})
@@ -205,7 +205,7 @@ func TestRegisterHandlerDuplicateUser(t *testing.T) {
 		testKey = testKey + "0123456789012345678901234567890123456789"
 	}
 	testKey = testKey[:32]
-	
+
 	manager, err := keys.NewManager(time.Hour, time.Hour*24, testKey)
 	if err != nil {
 		t.Fatalf("Failed to create key manager: %v", err)
@@ -255,7 +255,7 @@ func TestRegisterHandlerDuplicateUser(t *testing.T) {
 	server.handleRegister(rr2, req2)
 
 	if rr2.Code != http.StatusConflict {
-		t.Errorf("Duplicate username should return %d, got %d", 
+		t.Errorf("Duplicate username should return %d, got %d",
 			http.StatusConflict, rr2.Code)
 	}
 
@@ -273,7 +273,7 @@ func TestRegisterHandlerDuplicateUser(t *testing.T) {
 	server.handleRegister(rr3, req3)
 
 	if rr3.Code != http.StatusConflict {
-		t.Errorf("Duplicate email should return %d, got %d", 
+		t.Errorf("Duplicate email should return %d, got %d",
 			http.StatusConflict, rr3.Code)
 	}
 }

@@ -21,7 +21,7 @@ func TestRegisterEndpointIntegration(t *testing.T) {
 		testKey = testKey + "0123456789012345678901234567890123456789" // pad to ensure 32+ chars
 	}
 	testKey = testKey[:32] // ensure exactly 32 chars
-	
+
 	manager, err := keys.NewManager(time.Hour, time.Hour*24, testKey)
 	if err != nil {
 		t.Fatalf("Failed to create key manager: %v", err)
@@ -99,7 +99,7 @@ func TestRegisterEndpointIntegration(t *testing.T) {
 		t.Errorf("Expected password length 36, got %d", len(password))
 	}
 
-	fmt.Printf("Successfully registered user '%s' with password: %s\n", 
+	fmt.Printf("Successfully registered user '%s' with password: %s\n",
 		registrationData["username"], password)
 }
 
@@ -110,7 +110,7 @@ func TestRegisterEndpointDuplicateIntegration(t *testing.T) {
 		testKey = testKey + "0123456789012345678901234567890123456789" // pad to ensure 32+ chars
 	}
 	testKey = testKey[:32] // ensure exactly 32 chars
-	
+
 	manager, err := keys.NewManager(time.Hour, time.Hour*24, testKey)
 	if err != nil {
 		t.Fatalf("Failed to create key manager: %v", err)
@@ -159,7 +159,7 @@ func TestRegisterEndpointDuplicateIntegration(t *testing.T) {
 	defer resp2.Body.Close()
 
 	if resp2.StatusCode != http.StatusConflict {
-		t.Errorf("Duplicate registration should return %d, got %d", 
+		t.Errorf("Duplicate registration should return %d, got %d",
 			http.StatusConflict, resp2.StatusCode)
 	}
 }

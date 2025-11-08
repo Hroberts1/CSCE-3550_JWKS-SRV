@@ -117,7 +117,7 @@ func TestCreateUser(t *testing.T) {
 
 	// Verify user exists in database
 	var count int
-	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND email = ?", 
+	err = db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ? AND email = ?",
 		username, email).Scan(&count)
 	if err != nil {
 		t.Fatalf("Failed to query user: %v", err)
@@ -129,7 +129,7 @@ func TestCreateUser(t *testing.T) {
 
 	// Verify password is hashed (not stored in plain text)
 	var storedHash string
-	err = db.conn.QueryRow("SELECT password_hash FROM users WHERE username = ?", 
+	err = db.conn.QueryRow("SELECT password_hash FROM users WHERE username = ?",
 		username).Scan(&storedHash)
 	if err != nil {
 		t.Fatalf("Failed to get password hash: %v", err)

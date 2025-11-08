@@ -527,11 +527,11 @@ func (m *Manager) getKeys(query string, args ...interface{}) (map[int]*rsa.Priva
 
 // User represents a user record in the database
 type User struct {
-	ID             int64     `json:"id"`
-	Username       string    `json:"username"`
-	PasswordHash   string    `json:"-"`  // never include in JSON responses
-	Email          string    `json:"email"`
-	DateRegistered time.Time `json:"date_registered"`
+	ID             int64      `json:"id"`
+	Username       string     `json:"username"`
+	PasswordHash   string     `json:"-"` // never include in JSON responses
+	Email          string     `json:"email"`
+	DateRegistered time.Time  `json:"date_registered"`
 	LastLogin      *time.Time `json:"last_login,omitempty"`
 }
 
@@ -545,10 +545,10 @@ type Argon2Config struct {
 
 // Default Argon2 configuration (recommended values)
 var DefaultArgon2Config = Argon2Config{
-	Time:      3,      // 3 iterations
+	Time:      3,         // 3 iterations
 	Memory:    64 * 1024, // 64 MB
-	Threads:   4,      // 4 threads
-	KeyLength: 32,     // 32 bytes key length
+	Threads:   4,         // 4 threads
+	KeyLength: 32,        // 32 bytes key length
 }
 
 // CreateUser creates a new user with a generated password
@@ -563,7 +563,7 @@ func (db *Database) CreateUser(username, email string) (string, error) {
 	}
 
 	// hash password with Argon2
-	hash := argon2.IDKey([]byte(password), salt, DefaultArgon2Config.Time, 
+	hash := argon2.IDKey([]byte(password), salt, DefaultArgon2Config.Time,
 		DefaultArgon2Config.Memory, DefaultArgon2Config.Threads, DefaultArgon2Config.KeyLength)
 
 	// encode salt and hash for storage (salt:hash format in base64)
@@ -590,7 +590,7 @@ func (db *Database) GetUserByUsername(username string) (*User, error) {
 	var lastLogin sql.NullTime
 
 	err := db.conn.QueryRow(query, username).Scan(
-		&user.ID, &user.Username, &user.PasswordHash, 
+		&user.ID, &user.Username, &user.PasswordHash,
 		&user.Email, &user.DateRegistered, &lastLogin,
 	)
 	if err != nil {
