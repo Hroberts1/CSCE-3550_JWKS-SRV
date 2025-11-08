@@ -24,24 +24,19 @@ type Manager struct {
 
 // create new key mgr
 func NewManager(keyLifetime, keyRetainPeriod time.Duration, encryptionKey string) (*Manager, error) {
-	// Use encryption key from config
+	// Use encryption key from config - this creates the database with schema
 	dbManager, err := db.NewManager("", encryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database manager: %w", err)
 	}
 
-	// keep existing database for compatibility
-	database, err := db.NewDatabase()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize database: %w", err)
-	}
-
+	// No need for separate database instance - use the encrypted manager's database
 	return &Manager{
 		keyLifetime:     keyLifetime,
 		keyRetainPeriod: keyRetainPeriod,
 		keys:            make(map[string]*Key),
 		stopCh:          make(chan struct{}),
-		database:        database,
+		database:        nil, // Remove dual database setup
 		dbManager:       dbManager,
 	}, nil
 }
@@ -106,10 +101,7 @@ func (m *Manager) Stop() {
 		close(m.stopCh)
 	}
 
-	// close database connection
-	if m.database != nil {
-		m.database.Close()
-	}
+	// No need to close database - it's handled by dbManager
 }
 
 // get valid keys for JWKS endpoint
@@ -131,25 +123,8 @@ func (m *Manager) GetValidKeys() []*Key {
 		return keys
 	}
 
-	// fallback to old unencrypted keys
-	keyRecords, err := m.database.GetValidKeys()
-	if err != nil {
-		return []*Key{}
-	}
-
-	keys := make([]*Key, 0, len(keyRecords))
-	for _, record := range keyRecords {
-		key := &Key{
-			ID:         strconv.FormatInt(record.Kid, 10),
-			CreatedAt:  time.Unix(record.Exp, 0).Add(-m.keyLifetime), // approximate creation time
-			ExpiresAt:  time.Unix(record.Exp, 0),
-			PrivateKey: record.Key,
-			PublicKey:  &record.Key.PublicKey,
-		}
-		keys = append(keys, key)
-	}
-
-	return keys
+	// if no encrypted keys found, return empty slice
+	return []*Key{}
 }
 
 // get signing key for auth endpoint
@@ -177,29 +152,8 @@ func (m *Manager) GetSigningKey(expired bool) *Key {
 		}
 	}
 
-	// fallback to old unencrypted keys
-	var keyRecord *db.KeyRecord
-
-	if expired {
-		// get any expired key from database
-		keyRecord, err = m.database.GetAnyExpiredKey()
-	} else {
-		// get any valid key from database
-		keyRecord, err = m.database.GetAnyValidKey()
-	}
-
-	if err != nil {
-		return nil
-	}
-
-	// convert database record to Key struct
-	return &Key{
-		ID:         strconv.FormatInt(keyRecord.Kid, 10),
-		CreatedAt:  time.Unix(keyRecord.Exp, 0).Add(-m.keyLifetime), // approximate creation time
-		ExpiresAt:  time.Unix(keyRecord.Exp, 0),
-		PrivateKey: keyRecord.Key,
-		PublicKey:  &keyRecord.Key.PublicKey,
-	}
+	// no encrypted keys found
+	return nil
 }
 
 // rotate key - create new current key
