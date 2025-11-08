@@ -3,6 +3,9 @@ package main
 import (
 	"os"
 	"testing"
+
+	"csce-3550_jwks-srv/internal/httpserver"
+	"csce-3550_jwks-srv/internal/keys"
 )
 
 func TestMainComponents(t *testing.T) {
@@ -14,14 +17,46 @@ func TestMainComponents(t *testing.T) {
 	os.Unsetenv("KEY_RETAIN")
 	os.Unsetenv("JWT_LIFETIME")
 	os.Unsetenv("ISSUER")
+	os.Unsetenv("NOT_MY_KEY") // clear encryption key too
+
+	// set minimal env for test
+	os.Setenv("NOT_MY_KEY", "test-encryption-key-123")
+	defer os.Unsetenv("NOT_MY_KEY")
 
 	// this test just verifies imports and basic setup work
 	// actual main() function is tested through integration tests
 
-	// placeholder test to get coverage
-	if true {
-		t.Log("Main package imports working correctly")
+	// Test basic config creation
+	config, err := httpserver.NewConfig()
+	if err != nil {
+		t.Fatalf("Failed to create config: %v", err)
 	}
+	if config == nil {
+		t.Fatal("Config is nil")
+	}
+
+	// Test key manager can be created
+	manager, err := keys.NewManager(config.KeyLifetime, config.KeyRetainPeriod, config.EncryptionKey)
+	if err != nil {
+		t.Fatalf("Failed to create key manager: %v", err)
+	}
+	defer func() {
+		if manager != nil {
+			manager.Stop()
+		}
+	}()
+
+	if manager == nil {
+		t.Fatal("Manager is nil")
+	}
+
+	// Test HTTP server can be created
+	server := httpserver.NewSrv(manager, config)
+	if server == nil {
+		t.Fatal("Server is nil")
+	}
+
+	t.Log("Main package components initialize correctly")
 }
 
 /*
