@@ -441,5 +441,19 @@ func (m *Manager) getKeys(query string, args ...interface{}) (map[int]*rsa.Priva
 			return nil, fmt.Errorf("failed to decrypt key %d: %w", kid, err)
 		}
 
+		// Parse PEM data back to RSA private key
+		block, _ := pem.Decode(pemData)
+		if block == nil || block.Type != "RSA PRIVATE KEY" {
+			return nil, fmt.Errorf("invalid PEM block for key %d", kid)
+		}
+
+		privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse private key %d: %w", kid, err)
+		}
+
+		keys[kid] = privateKey
 	}
+
+	return keys, nil
 }
