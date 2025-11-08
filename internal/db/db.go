@@ -12,6 +12,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/your-repo/internal/crypto"
 )
 
 // Database represents our SQLite database connection
@@ -355,4 +356,28 @@ func deserializePEMKey(pemData []byte) (*rsa.PrivateKey, error) {
 	}
 
 	return privateKey, nil
+}
+
+type Manager struct {
+	db        *sql.DB
+	encryptor *crypto.Encryptor
+}
+
+func NewManager(dbPath, encryptionKey string) (*Manager, error) {
+	// Initialize database
+	db, err := NewDatabase()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database: %w", err)
+	}
+
+	// Initialize encryptor
+	encryptor, err := crypto.NewEncryptor(encryptionKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create encryptor: %w", err)
+	}
+
+	return &Manager{
+		db:        db,
+		encryptor: encryptor,
+	}, nil
 }
