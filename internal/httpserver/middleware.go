@@ -63,11 +63,13 @@ type visitor struct {
 }
 
 type tokenBucket struct {
-	tokens     int
-	capacity   int
-	refillRate time.Duration
-	lastRefill time.Time
-	mu         sync.Mutex
+	tokens       int
+	capacity     int
+	refillRate   time.Duration
+	lastRefill   time.Time
+	windowStart  time.Time
+	requestCount int
+	mu           sync.Mutex
 }
 
 // Global rate limiter for auth endpoint - 10 requests per second
@@ -140,10 +142,12 @@ func (rl *rateLimiter) allow(ip string, capacity int, refillRate time.Duration) 
 	if !exists {
 		vis = &visitor{
 			limiter: &tokenBucket{
-				tokens:     capacity,
-				capacity:   capacity,
-				refillRate: refillRate,
-				lastRefill: time.Now(),
+				tokens:       capacity,
+				capacity:     capacity,
+				refillRate:   refillRate,
+				lastRefill:   time.Now(),
+				windowStart:  time.Now(),
+				requestCount: 0,
 			},
 			lastSeen: time.Now(),
 		}
@@ -158,27 +162,25 @@ func (tb *tokenBucket) consume() bool {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
-	// refill tokens based on time elapsed
 	now := time.Now()
-	elapsed := now.Sub(tb.lastRefill)
 
-	// Calculate how many tokens to add based on elapsed time
-	// For 10 req/sec: refillRate = time.Second, so we add 10 tokens per second
-	// For other rates: tokens to add = elapsed / refillRate * capacity
-	tokensToAdd := int(elapsed / tb.refillRate)
-
-	if tokensToAdd > 0 {
-		tb.tokens = min(tb.capacity, tb.tokens+tokensToAdd)
-		tb.lastRefill = now
+	// Check if we need to reset the window (1 second has passed)
+	if now.Sub(tb.windowStart) >= time.Second {
+		tb.windowStart = now
+		tb.requestCount = 0
+		log.Printf("[Rate Limit] Window reset, counter set to 0")
 	}
 
-	// consume a token if available
-	if tb.tokens > 0 {
-		tb.tokens--
-		return true
+	// Check if we've exceeded the limit in the current window
+	if tb.requestCount >= tb.capacity {
+		log.Printf("[Rate Limit] Request limit reached (%d/%d), request blocked", tb.requestCount, tb.capacity)
+		return false
 	}
 
-	return false
+	// Allow the request
+	tb.requestCount++
+	log.Printf("[Rate Limit] Request allowed (%d/%d)", tb.requestCount, tb.capacity)
+	return true
 }
 
 func min(a, b int) int {
