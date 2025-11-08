@@ -116,6 +116,21 @@ func (db *Database) initSchema() error {
 		return fmt.Errorf("failed to create users table: %w", err)
 	}
 
+	// Create auth_logs table for logging authentication requests
+	authLogsQuery := `
+	CREATE TABLE IF NOT EXISTS auth_logs(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		request_ip TEXT NOT NULL,
+		request_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		user_id INTEGER,
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	);`
+
+	_, err = db.conn.Exec(authLogsQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create auth_logs table: %w", err)
+	}
+
 	return nil
 }
 
@@ -642,4 +657,79 @@ func (db *Database) VerifyPassword(username, password string) (bool, error) {
 // CreateUser creates a new user via the manager
 func (m *Manager) CreateUser(username, email string) (string, error) {
 	return m.database.CreateUser(username, email)
+}
+
+// AuthLog represents an authentication log entry
+type AuthLog struct {
+	ID               int64     `json:"id"`
+	RequestIP        string    `json:"request_ip"`
+	RequestTimestamp time.Time `json:"request_timestamp"`
+	UserID           *int64    `json:"user_id,omitempty"`
+}
+
+// LogAuthRequest logs an authentication request to the database
+func (db *Database) LogAuthRequest(requestIP string, username string) error {
+	// get user ID if username is provided
+	var userID *int64
+	if username != "" {
+		user, err := db.GetUserByUsername(username)
+		if err == nil && user != nil {
+			userID = &user.ID
+		}
+		// if user not found, we still log with NULL user_id
+	}
+
+	// insert auth log entry
+	query := `INSERT INTO auth_logs (request_ip, user_id) VALUES (?, ?)`
+	_, err := db.conn.Exec(query, requestIP, userID)
+	if err != nil {
+		return fmt.Errorf("failed to log auth request: %w", err)
+	}
+
+	return nil
+}
+
+// GetAuthLogs retrieves authentication logs from the database
+func (db *Database) GetAuthLogs(limit int) ([]*AuthLog, error) {
+	query := `SELECT id, request_ip, request_timestamp, user_id 
+			  FROM auth_logs 
+			  ORDER BY request_timestamp DESC`
+	
+	if limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
+	}
+
+	rows, err := db.conn.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query auth logs: %w", err)
+	}
+	defer rows.Close()
+
+	var logs []*AuthLog
+	for rows.Next() {
+		var log AuthLog
+		var userID sql.NullInt64
+
+		err := rows.Scan(&log.ID, &log.RequestIP, &log.RequestTimestamp, &userID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan auth log: %w", err)
+		}
+
+		if userID.Valid {
+			log.UserID = &userID.Int64
+		}
+
+		logs = append(logs, &log)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating auth logs: %w", err)
+	}
+
+	return logs, nil
+}
+
+// LogAuthRequest logs an authentication request via the manager
+func (m *Manager) LogAuthRequest(requestIP string, username string) error {
+	return m.database.LogAuthRequest(requestIP, username)
 }

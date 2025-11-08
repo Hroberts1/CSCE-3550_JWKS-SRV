@@ -34,11 +34,33 @@ func (s *Server) handleJWKS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// AuthRequest represents the request body for authentication
+type AuthRequest struct {
+	Username string `json:"username"`
+}
+
 // auth endpoint handler - POST /auth
 func (s *Server) handleAuth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
+	}
+
+	// extract request IP address
+	requestIP := s.getRequestIP(r)
+
+	// parse request body to get username
+	var authReq AuthRequest
+	username := ""
+	if err := json.NewDecoder(r.Body).Decode(&authReq); err == nil {
+		username = authReq.Username
+	}
+	// if parsing fails or no username provided, we still proceed but log with empty username
+
+	// log authentication request
+	if err := s.manager.LogAuthRequest(requestIP, username); err != nil {
+		// log the error but don't fail the request
+		// in production, you might want to log this error
 	}
 
 	// check for expired query param
@@ -82,6 +104,33 @@ func (s *Server) handleAuth(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
 	}
+}
+
+// getRequestIP extracts the client IP address from the request
+func (s *Server) getRequestIP(r *http.Request) string {
+	// check X-Forwarded-For header first (for proxies/load balancers)
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip != "" {
+		// X-Forwarded-For can contain multiple IPs, take the first one
+		parts := strings.Split(ip, ",")
+		if len(parts) > 0 {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+
+	// check X-Real-IP header
+	ip = r.Header.Get("X-Real-IP")
+	if ip != "" {
+		return ip
+	}
+
+	// fallback to RemoteAddr
+	ip = r.RemoteAddr
+	// remove port if present
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
 }
 
 // RegisterRequest represents the request body for user registration

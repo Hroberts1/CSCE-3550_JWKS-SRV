@@ -232,3 +232,8 @@ func (m *Manager) cleanup() {
 func (m *Manager) CreateUser(username, email string) (string, error) {
 	return m.dbManager.CreateUser(username, email)
 }
+
+// LogAuthRequest logs an authentication request via the database manager
+func (m *Manager) LogAuthRequest(requestIP string, username string) error {
+	return m.dbManager.LogAuthRequest(requestIP, username)
+}
